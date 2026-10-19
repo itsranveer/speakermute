@@ -1,0 +1,32 @@
+# outputs
+out/
+*.mp4
+*.mkv
+*.webm
+*.mov
+*.m4v
+*.wav
+
+# secrets
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# model caches (if configured to live in the project)
+.cache/
+models/
+
+# macOS
+.DS_Store
+
+# tool caches
+.ruff_cache/
