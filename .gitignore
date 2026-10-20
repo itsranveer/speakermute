@@ -1,5 +1,6 @@
-# outputs
+# outputs and local test media
 out/
+videos/
 *.mp4
 *.mkv
 *.webm
