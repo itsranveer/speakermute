@@ -27,6 +27,9 @@ from speakermute.log import console, logger
 FFMPEG_ENV = "FFMPEG"
 FFPROBE_ENV = "FFPROBE"
 
+# Output containers that use the MP4/MOV muxer (and understand ``-movflags``).
+MP4_FAMILY = {".mp4", ".mov", ".m4v"}
+
 INSTALL_HINT = (
     "Install ffmpeg and make sure it is on your PATH:\n"
     "  macOS:          brew install ffmpeg\n"
@@ -311,8 +314,12 @@ def mute_with_filter_script(
             "yuv420p",
         ]
         description = "Muting audio + burning subtitles"
-    args += ["-c:a", "aac", "-b:a", audio_bitrate, "-movflags", "+faststart", str(output)]
-    run_ffmpeg(args, description=description, total_duration=total_duration)
+    args += ["-c:a", "aac", "-b:a", audio_bitrate]
+    if output.suffix.lower() in MP4_FAMILY:
+        # Move the index to the front so the file starts playing before it is fully
+        # downloaded. This is an MP4/MOV muxer option; Matroska has no equivalent.
+        args += ["-movflags", "+faststart"]
+    run_ffmpeg([*args, str(output)], description=description, total_duration=total_duration)
     return output
 
 

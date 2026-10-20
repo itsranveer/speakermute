@@ -8,6 +8,20 @@ from pathlib import Path
 VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov", ".m4v"}
 DEFAULT_OUT_DIR = Path("out")
 
+# Containers the muted video may be written to. The video stream is copied as is,
+# so the output container must accept whatever codec the input holds: MP4-family
+# inputs stay MP4-family, Matroska stays Matroska, and everything else (WebM,
+# whose VP8/VP9 + Opus/Vorbis cannot be mixed with the AAC audio we write) goes
+# to Matroska, which accepts any codec.
+MUTED_CONTAINERS = {".mp4", ".mov", ".m4v", ".mkv"}
+FALLBACK_MUTED_SUFFIX = ".mkv"
+
+
+def muted_suffix(video: str | Path) -> str:
+    """Return the suffix for the muted copy of ``video`` (see :data:`MUTED_CONTAINERS`)."""
+    suffix = Path(video).suffix.lower()
+    return suffix if suffix in MUTED_CONTAINERS else FALLBACK_MUTED_SUFFIX
+
 
 @dataclass(frozen=True)
 class VideoOutputs:
@@ -28,7 +42,7 @@ class VideoOutputs:
 
     @property
     def muted(self) -> Path:
-        return self.dir / f"{self.stem}_muted.mp4"
+        return self.dir / f"{self.stem}_muted{muted_suffix(self.video)}"
 
     @property
     def filter_script(self) -> Path:

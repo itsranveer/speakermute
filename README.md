@@ -15,7 +15,7 @@ out/<video-stem>/
 ├── transcript.json        # WhisperX segments: start, end, speaker, text, words (hand-editable)
 ├── subtitles.srt          # [SPEAKER_00]: text   (labels renamable with --rename)
 ├── mute_filter.txt        # the ffmpeg filter script that was applied
-└── <stem>_muted.mp4       # chosen speakers silenced; subtitles burned in too with --burn-subs
+└── <stem>_muted.mp4       # chosen speakers silenced (.mkv/.mov keep their container, .webm -> .mkv)
 ```
 
 ## What it works on
@@ -157,7 +157,7 @@ uv run speakermute mute videos/episode-12.mp4 --speaker SPEAKER_01 --transcript 
 |---|---|
 | `transcribe <video-or-folder>` | WhisperX transcribe → align → diarize. Writes `transcript.json` + `subtitles.srt`. Skips videos that already have a transcript unless `--force`. |
 | `speakers <video>` | Prints each speaker label with total talk time, segment count and its first ~3 lines (`--lines`). Transcribes first if needed. |
-| `mute <video> --speaker LABEL` | Mutes every segment of `LABEL` (plus `--pad` seconds on each side, default 0.15) using the existing transcript and writes `<stem>_muted.mp4` (or the path given with `--output/-o`). Repeat `--speaker` to mute several people. With `--burn-subs` the subtitles are burned in during the same pass. |
+| `mute <video> --speaker LABEL` | Mutes every segment of `LABEL` (plus `--pad` seconds on each side, default 0.15) using the existing transcript and writes `<stem>_muted.<ext>` (or the path given with `--output/-o`). Repeat `--speaker` to mute several people. With `--burn-subs` the subtitles are burned in during the same pass. |
 | `run <video-or-folder> --mute-speaker LABEL` | `transcribe` (if needed) + `mute` in one go. `--mute-speaker` is repeatable too; `--output` only with a single video. |
 
 Common options for the transcription commands:
@@ -185,8 +185,11 @@ Common options for the transcription commands:
   `-filter_script:a` on ffmpeg ≤ 6; the expression can get long, and very long lists are split across
   several chained `volume` filters).
 * Without `--burn-subs` the video stream is copied (`-c:v copy`) and only the audio is re-encoded to AAC,
-  so `<stem>_muted.mp4` is pixel-identical to the input and `subtitles.srt` can be loaded as a
+  so the muted video is pixel-identical to the input and `subtitles.srt` can be loaded as a
   toggleable sidecar in VLC/mpv/IINA.
+* Because the video stream is copied unchanged, the output keeps the input's container: `.mp4`, `.mov`,
+  `.m4v` and `.mkv` stay as they are, and `.webm` becomes `.mkv` (WebM cannot hold AAC audio, Matroska
+  takes any codec). Pass `--output name.ext` to pick a container yourself.
 * With `--burn-subs` the same single ffmpeg pass also runs the `subtitles` filter (needs libass, see
   Setup) and re-encodes the video with x264 (`--crf`, `--preset`). There is no intermediate file.
 * Afterwards the input and output durations are compared with `ffprobe` and a warning is logged if they

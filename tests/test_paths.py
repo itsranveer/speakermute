@@ -1,6 +1,6 @@
 import pytest
 
-from speakermute.paths import collect_videos, outputs_for
+from speakermute.paths import collect_videos, muted_suffix, outputs_for
 
 
 def test_outputs_layout(tmp_path):
@@ -10,6 +10,27 @@ def test_outputs_layout(tmp_path):
     assert out.subtitles == out.dir / "subtitles.srt"
     assert out.muted == out.dir / "My Podcast_muted.mp4"
     assert out.filter_script == out.dir / "mute_filter.txt"
+
+
+@pytest.mark.parametrize(
+    ("video", "suffix"),
+    [
+        ("a.mp4", ".mp4"),
+        ("a.MP4", ".mp4"),
+        ("a.mov", ".mov"),
+        ("a.m4v", ".m4v"),
+        ("a.mkv", ".mkv"),
+        ("a.webm", ".mkv"),  # WebM cannot hold AAC, Matroska takes anything
+        ("a.avi", ".mkv"),
+    ],
+)
+def test_muted_suffix_follows_input_container(video, suffix):
+    assert muted_suffix(video) == suffix
+
+
+def test_muted_output_keeps_matroska(tmp_path):
+    out = outputs_for("clips/talk.webm", tmp_path / "out")
+    assert out.muted == tmp_path / "out" / "talk" / "talk_muted.mkv"
 
 
 def test_collect_videos_single_file(tmp_path):

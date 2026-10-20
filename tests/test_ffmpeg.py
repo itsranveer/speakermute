@@ -206,9 +206,21 @@ class TestCommandBuilders:
         assert args[args.index("-c:v") + 1] == "copy"
         assert "-vf" not in args and "libx264" not in args
         assert args[args.index("-c:a") + 1] == "aac"
+        assert args[args.index("-movflags") + 1] == "+faststart"
         assert args[-1] == str(out)
         assert kwargs["description"] == "Muting audio"
         assert kwargs["total_duration"] == 10.0
+
+    @pytest.mark.parametrize("suffix", [".mkv", ".MKV"])
+    def test_mute_to_matroska_has_no_faststart(self, capture, tmp_path, monkeypatch, suffix):
+        monkeypatch.setattr(ff, "ffmpeg_version", lambda: (9, 0))
+        script = tmp_path / "mute_filter.txt"
+        out = tmp_path / f"x_muted{suffix}"
+        ff.mute_with_filter_script("in.mkv", out, script)
+        args, _ = capture[0]
+        assert "-movflags" not in args  # an MP4/MOV muxer option
+        assert args[args.index("-c:v") + 1] == "copy"
+        assert args[-1] == str(out)
 
     def test_mute_with_filter_script_burns_subtitles_in_one_pass(
         self, capture, tmp_path, monkeypatch
