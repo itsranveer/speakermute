@@ -243,13 +243,17 @@ and set `FFMPEG=` in `.env` (see Setup §1).
 
 **Apple Silicon: `--device mps`?** – not supported by ctranslate2; use CPU (the default) or a CUDA machine.
 
-**Warnings like "Model was trained with pyannote.audio 0.0.1 / torch 1.x" or "Lightning automatically
-upgraded your loaded checkpoint"** are harmless; they come from the bundled VAD checkpoint.
+**Library chatter.** Without `-v` the tool hides INFO-level messages from whisperx, Lightning and pyannote
+(for example `Performing voice activity detection`, `Loading diarization model` and `Lightning automatically
+upgraded your loaded checkpoint`) and two warnings that are known to be harmless:
 
-**`torchcodec is not installed correctly so built-in audio decoding will fail`** (pyannote.audio 4, mostly
-on macOS where the torchcodec wheel cannot find ffmpeg's libraries) is also harmless: pyannote only ever
-receives audio that this tool has already decoded with ffmpeg, so torchcodec is never used. The tool
-silences this particular warning; `-v` does not bring it back.
+* `torchcodec is not installed correctly so built-in audio decoding will fail` (pyannote.audio 4, mostly on
+  macOS where the torchcodec wheel cannot find ffmpeg's libraries). pyannote only ever receives audio this
+  tool has already decoded with ffmpeg, so torchcodec is never used.
+* `std(): degrees of freedom is <= 0` from pyannote's pooling layer on a very short segment.
+
+`-v` brings the library INFO messages back. Other warnings, such as "Model was trained with pyannote.audio
+0.0.1 / torch 1.x" from the bundled VAD checkpoint, still show and are harmless too.
 
 **Wrong speaker muted** – labels are assigned by order of first speech. Run `speakers`, pick the right label,
 or fix `transcript.json` by hand and re-run `mute`.

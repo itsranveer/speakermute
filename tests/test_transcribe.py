@@ -251,3 +251,43 @@ class TestTranscriptJson:
         p.write_text('{"segments": [{"start": 1}]}', encoding="utf-8")
         with pytest.raises(TranscriptError, match="segment #0"):
             tr.load_transcript(p)
+
+
+class TestNoiseSuppression:
+    TORCHCODEC_MESSAGE = (
+        "\ntorchcodec is not installed correctly so built-in audio decoding will fail. "
+        "Solutions are:\n* use audio preloaded in-memory ..."
+    )
+
+    def test_known_warnings_are_hidden_but_others_are_not(self):
+        import warnings
+
+        from speakermute import transcribe
+
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter("always")
+            transcribe.silence_noisy_warnings()
+            warnings.warn(self.TORCHCODEC_MESSAGE, UserWarning, stacklevel=1)
+            warnings.warn(
+                "std(): degrees of freedom is <= 0. Correction should be strictly less",
+                UserWarning,
+                stacklevel=1,
+            )
+            warnings.warn("something else entirely", UserWarning, stacklevel=1)
+        assert [str(w.message) for w in seen] == ["something else entirely"]
+
+    def test_import_whisperx_quiets_its_logging(self, fake_whisperx):
+        import logging
+
+        from speakermute import log, transcribe
+
+        log.setup_logging(False)
+        logging.getLogger("lightning.pytorch").setLevel(logging.INFO)
+        transcribe.import_whisperx()
+        assert fake_whisperx["whisperx_logging"] == ["warning"]
+        assert logging.getLogger("lightning.pytorch").level == logging.WARNING
+
+        log.setup_logging(True)
+        transcribe.import_whisperx()
+        assert fake_whisperx["whisperx_logging"][-1] == "info"
+        log.setup_logging(False)

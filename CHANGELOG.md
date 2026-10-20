@@ -30,7 +30,8 @@ recorded calls) without cutting it.
   environment overrides, and a clear error when the build lacks libass.
 * Mute expressions are split across chained filters (50 ranges each) to stay under ffmpeg's
   expression-parser limit.
-* pyannote's anonymous usage metrics are switched off unless `PYANNOTE_METRICS_ENABLED` is set,
-  and its harmless import-time `torchcodec` warning is hidden.
+* pyannote's anonymous usage metrics are switched off unless `PYANNOTE_METRICS_ENABLED` is set.
+  Without `-v`, INFO chatter from whisperx, Lightning and pyannote and two known-harmless warnings
+  (`torchcodec is not installed correctly`, `std(): degrees of freedom is <= 0`) are hidden.
 
 [0.1.0]: https://github.com/itsranveer/speakermute/releases/tag/v0.1.0

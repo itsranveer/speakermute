@@ -96,7 +96,11 @@ def fake_whisperx(monkeypatch):
                 w["speaker"] = seg["speaker"]
         return result
 
+    def setup_logging(level="warning", log_file=None):
+        calls.setdefault("whisperx_logging", []).append(level)
+
     whisperx = types.ModuleType("whisperx")
+    whisperx.setup_logging = setup_logging
     whisperx.load_model = load_model
     whisperx.load_align_model = load_align_model
     whisperx.align = align
@@ -113,6 +117,9 @@ def fake_whisperx(monkeypatch):
     hub = types.ModuleType("huggingface_hub")
     hub.get_token = lambda: calls.get("cached_token")
 
+    lightning = types.ModuleType("lightning")  # pyannote's dependency; never load the real one
+
+    monkeypatch.setitem(sys.modules, "lightning", lightning)
     monkeypatch.setitem(sys.modules, "whisperx", whisperx)
     monkeypatch.setitem(sys.modules, "whisperx.diarize", diarize)
     monkeypatch.setitem(sys.modules, "torch", torch)

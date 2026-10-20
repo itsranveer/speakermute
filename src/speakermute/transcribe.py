@@ -19,9 +19,11 @@ multi-second torch import cost.
 
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import gc
 import json
+import logging
 import os
 import warnings
 import wave
@@ -43,7 +45,7 @@ from rich.progress import (
 
 from speakermute import __version__
 from speakermute.errors import MissingTokenError, TranscriptError
-from speakermute.log import console
+from speakermute.log import console, quiet_third_party_loggers, third_party_level
 
 SAMPLE_RATE = 16000
 TRANSCRIPT_VERSION = 1
@@ -135,13 +137,40 @@ def disable_pyannote_telemetry() -> None:
     os.environ.setdefault(PYANNOTE_TELEMETRY_ENV, "false")
 
 
-def silence_torchcodec_warning() -> None:
-    """Hide pyannote.audio 4's import-time "torchcodec is not installed correctly" warning.
+# Harmless warnings we hide. ``message`` is a regex matched at the *start* of the
+# text, hence the leading ``\s*``: pyannote's torchcodec message begins with "\n".
+NOISY_WARNINGS = (
+    # pyannote.audio 4 at import time. It only ever gets audio we already decoded
+    # with ffmpeg (an in-memory waveform), so torchcodec is never used.
+    r"\s*torchcodec is not installed correctly",
+    # torch, from pyannote's statistics pooling on a very short segment.
+    r"\s*std\(\): degrees of freedom is <= 0",
+)
 
-    pyannote only ever receives audio that was already decoded by ffmpeg (as an
-    in-memory waveform), so torchcodec is never used and the warning is noise.
+
+def silence_noisy_warnings() -> None:
+    """Hide the known-harmless warnings in :data:`NOISY_WARNINGS`."""
+    for pattern in NOISY_WARNINGS:
+        warnings.filterwarnings("ignore", message=pattern)
+
+
+def import_whisperx() -> Any:
+    """Import whisperx and tame the logging its dependencies set up on import.
+
+    whisperx attaches its own INFO handler to the ``whisperx`` logger, and
+    Lightning (pulled in by pyannote) forces its loggers to INFO and adds a
+    handler, both after our logging was configured. Importing Lightning here,
+    before any model loads, lets us lower those loggers right away.
     """
-    warnings.filterwarnings("ignore", message="torchcodec is not installed correctly")
+    import whisperx
+
+    with contextlib.suppress(ImportError):  # pyannote.audio depends on it, so it is there
+        import lightning  # noqa: F401
+    quiet_third_party_loggers()
+    setup = getattr(whisperx, "setup_logging", None)
+    if setup is not None:
+        setup(level=logging.getLevelName(third_party_level()).lower())
+    return whisperx
 
 
 def resolve_hf_token(explicit: str | None = None) -> str | None:
@@ -218,7 +247,7 @@ class Transcriber:
 
     def __init__(self, options: TranscribeOptions):
         disable_pyannote_telemetry()
-        silence_torchcodec_warning()
+        silence_noisy_warnings()
         self.options = options
         self.device = resolve_device(options.device)
         self.model_name = resolve_model(options.model, self.device)
@@ -273,7 +302,7 @@ class Transcriber:
     # -- lazy loading ---------------------------------------------------- #
 
     def _load_asr(self) -> None:
-        import whisperx
+        whisperx = import_whisperx()
 
         self._asr = whisperx.load_model(
             self.model_name,
@@ -284,12 +313,13 @@ class Transcriber:
         )
 
     def _load_align(self, language: str) -> None:
-        import whisperx
+        whisperx = import_whisperx()
 
         model, metadata = whisperx.load_align_model(language_code=language, device=self.device)
         self._align[language] = (model, metadata)
 
     def _load_diarizer(self) -> None:
+        import_whisperx()
         from whisperx.diarize import DiarizationPipeline
 
         self._diarizer = DiarizationPipeline(
@@ -318,7 +348,7 @@ class Transcriber:
         where each segment has ``start``, ``end``, ``text``, ``words`` and (when
         diarization is on) ``speaker``.
         """
-        import whisperx
+        whisperx = import_whisperx()
 
         opts = self.options
         with _progress_bar() as progress:
