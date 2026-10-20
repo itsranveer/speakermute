@@ -19,7 +19,9 @@ recorded calls) without cutting it.
   existing, hand-editable `transcript.json` with an ffmpeg `volume` filter; the video stream is
   copied so the length is unchanged. `--pad` widens each range, `--burn-subs` burns the subtitles
   in during the same pass, and `--output`/`-o` picks the output path (default
-  `out/<stem>/<stem>_muted.mp4`).
+  `out/<stem>/<stem>_muted.<ext>`). The output keeps the input's container (`.mp4`, `.mov`, `.m4v`,
+  `.mkv`); `.webm` and anything else becomes `.mkv`, since the copied video stream may not fit in
+  MP4 and WebM cannot hold AAC. `--output` pointing at the input video is refused.
 * `run`: transcribe (if needed) + mute in one go; works on folders, `--mute-speaker` repeatable.
 * pyannote estimates the speaker count by default; `--min-speakers` / `--max-speakers` bound it
   when the number is known.
@@ -28,5 +30,7 @@ recorded calls) without cutting it.
   environment overrides, and a clear error when the build lacks libass.
 * Mute expressions are split across chained filters (50 ranges each) to stay under ffmpeg's
   expression-parser limit.
+* pyannote's anonymous usage metrics are switched off unless `PYANNOTE_METRICS_ENABLED` is set,
+  and its harmless import-time `torchcodec` warning is hidden.
 
 [0.1.0]: https://github.com/itsranveer/speakermute/releases/tag/v0.1.0
