@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from speakermute import pipeline
-from speakermute.errors import SpeakerNotFoundError
+from speakermute.errors import SpeakermuteError, SpeakerNotFoundError
 from speakermute.paths import outputs_for
 from speakermute.transcribe import TranscribeOptions, Transcriber
 
@@ -195,6 +195,14 @@ class TestMuteVideo:
         # the side files stay in the per-video output folder
         assert outputs.subtitles.exists() and outputs.filter_script.exists()
         assert not outputs.muted.exists()
+
+    def test_refuses_to_overwrite_the_input(self, transcript_dir, fake_ffmpeg):
+        video, outputs = transcript_dir
+        before = video.read_bytes()
+        with pytest.raises(SpeakermuteError, match="input video itself"):
+            pipeline.mute_video(video, outputs, ["SPEAKER_01"], output=video)
+        assert "mute" not in fake_ffmpeg  # ffmpeg never started
+        assert video.read_bytes() == before
 
     def test_uses_explicit_transcript(self, transcript_dir, fake_ffmpeg, tmp_path):
         video, outputs = transcript_dir

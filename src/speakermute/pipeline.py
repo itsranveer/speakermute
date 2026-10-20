@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from speakermute import ffmpeg
-from speakermute.errors import SpeakerNotFoundError
+from speakermute.errors import SpeakermuteError, SpeakerNotFoundError
 from speakermute.log import logger
 from speakermute.paths import VideoOutputs
 from speakermute.ranges import (
@@ -86,6 +86,11 @@ def mute_video(
     if burn_subs:
         ffmpeg.require_subtitles_filter()
     target = output or outputs.muted
+    if target.resolve() == Path(video).resolve():
+        # ffmpeg runs with -y and would truncate the file it is reading from.
+        raise SpeakermuteError(
+            f"output {target} is the input video itself; choose another --output path"
+        )
 
     transcript = load_transcript(transcript_path or outputs.transcript)
     segments = transcript["segments"]
