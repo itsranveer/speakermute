@@ -15,6 +15,7 @@ recorded calls) without cutting it.
   writes `transcript.json` and `subtitles.srt` with speaker labels (`--rename OLD=NEW`).
   Videos that already have a transcript are skipped unless `--force`.
 * `speakers`: per-speaker talk time, segment count and first lines, to see who has which label.
+  Short acknowledgements ("Okay.") are skipped in the preview when the speaker has longer lines.
 * `mute`: silences every segment of one or more speakers (`--speaker`, repeatable) from an
   existing, hand-editable `transcript.json` with an ffmpeg `volume` filter; the video stream is
   copied so the length is unchanged. `--pad` widens each range, `--burn-subs` burns the subtitles

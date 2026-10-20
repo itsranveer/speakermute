@@ -156,7 +156,7 @@ uv run speakermute mute videos/episode-12.mp4 --speaker SPEAKER_01 --transcript 
 | Command | What it does |
 |---|---|
 | `transcribe <video-or-folder>` | WhisperX transcribe → align → diarize. Writes `transcript.json` + `subtitles.srt`. Skips videos that already have a transcript unless `--force`. |
-| `speakers <video>` | Prints each speaker label with total talk time, segment count and its first ~3 lines (`--lines`). Transcribes first if needed. |
+| `speakers <video>` | Prints each speaker label with total talk time, segment count and ~3 of its first lines (`--lines`), skipping one-word acknowledgements like "Okay." when longer lines exist. Transcribes first if needed. |
 | `mute <video> --speaker LABEL` | Mutes every segment of `LABEL` (plus `--pad` seconds on each side, default 0.15) using the existing transcript and writes `<stem>_muted.<ext>` (or the path given with `--output/-o`). Repeat `--speaker` to mute several people. With `--burn-subs` the subtitles are burned in during the same pass. |
 | `run <video-or-folder> --mute-speaker LABEL` | `transcribe` (if needed) + `mute` in one go. `--mute-speaker` is repeatable too; `--output` only with a single video. |
 

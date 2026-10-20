@@ -3,6 +3,7 @@ from rich.console import Console
 from speakermute.speakers import (
     SpeakerSummary,
     format_clock,
+    pick_preview_lines,
     render_speaker_table,
     summarize_speakers,
 )
@@ -45,6 +46,55 @@ def test_summarize_orders_by_first_appearance_and_aggregates():
 def test_summarize_respects_lines_argument():
     summaries = summarize_speakers(SEGMENTS, lines=1)
     assert summaries[1].first_lines == ["Thanks for having me."]
+
+
+def test_preview_skips_one_word_acknowledgements_when_longer_lines_exist():
+    texts = [
+        "Okay.",
+        "Okay.",
+        "All right.",
+        "Let me repeat the question back.",
+        "Sure.",
+        "So I need a class with three operations.",
+        "Insert, delete and get random.",
+    ]
+    assert pick_preview_lines(texts, lines=3, min_words=4) == [
+        "Let me repeat the question back.",
+        "So I need a class with three operations.",
+        "Insert, delete and get random.",
+    ]
+
+
+def test_preview_falls_back_to_short_lines_in_order():
+    # one long line, the rest short: keep the long one and fill from the start
+    texts = ["Okay.", "Right.", "Let me think about that one.", "Hmm."]
+    assert pick_preview_lines(texts, lines=3, min_words=4) == [
+        "Okay.",
+        "Right.",
+        "Let me think about that one.",
+    ]
+    assert pick_preview_lines(["Yes.", "No."], lines=3, min_words=4) == ["Yes.", "No."]
+    assert pick_preview_lines([], lines=3, min_words=4) == []
+
+
+def test_summarize_prefers_substantive_lines():
+    segments = [
+        {"start": 0.0, "end": 1.0, "speaker": "S", "text": "Okay."},
+        {"start": 1.0, "end": 2.0, "speaker": "S", "text": "Right."},
+        {
+            "start": 2.0,
+            "end": 5.0,
+            "speaker": "S",
+            "text": "From what I understand, I need a class.",
+        },
+        {"start": 5.0, "end": 6.0, "speaker": "S", "text": "One is to insert an element."},
+    ]
+    (summary,) = summarize_speakers(segments, lines=2)
+    assert summary.first_lines == [
+        "From what I understand, I need a class.",
+        "One is to insert an element.",
+    ]
+    assert summary.segment_count == 4
 
 
 def test_summarize_empty():
