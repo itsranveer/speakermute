@@ -1967,6 +1967,8 @@ name = "speakermute"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "python-dotenv" },
     { name = "rich" },
     { name = "typer" },
@@ -1981,10 +1983,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "numpy", specifier = ">=1.26" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "rich", specifier = ">=13.7" },
     { name = "typer", specifier = ">=0.15" },
-    { name = "whisperx", specifier = ">=3.3" },
+    { name = "whisperx", specifier = ">=3.8" },
 ]
 
 [package.metadata.requires-dev]

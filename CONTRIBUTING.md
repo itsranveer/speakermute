@@ -27,7 +27,9 @@ src/speakermute/
 ├── ranges.py       pure helpers: pad/merge time ranges, build the volume filtergraph
 ├── srt.py          SRT writer with speaker labels and --rename
 ├── speakers.py     per-speaker summary table
-└── paths.py        out/<stem>/ layout
+├── paths.py        out/<stem>/ layout
+├── errors.py       user-facing exception types (printed without a traceback)
+└── log.py          shared rich console and logger
 ```
 
 `ranges.py`, `srt.py` and `speakers.py` are pure and fully unit-tested; keep them that way.

@@ -23,6 +23,7 @@ import datetime as dt
 import gc
 import json
 import os
+import warnings
 import wave
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -134,6 +135,15 @@ def disable_pyannote_telemetry() -> None:
     os.environ.setdefault(PYANNOTE_TELEMETRY_ENV, "false")
 
 
+def silence_torchcodec_warning() -> None:
+    """Hide pyannote.audio 4's import-time "torchcodec is not installed correctly" warning.
+
+    pyannote only ever receives audio that was already decoded by ffmpeg (as an
+    in-memory waveform), so torchcodec is never used and the warning is noise.
+    """
+    warnings.filterwarnings("ignore", message="torchcodec is not installed correctly")
+
+
 def resolve_hf_token(explicit: str | None = None) -> str | None:
     """Explicit value, then ``HF_TOKEN``, then the ``huggingface-cli login`` cache."""
     if explicit:
@@ -208,6 +218,7 @@ class Transcriber:
 
     def __init__(self, options: TranscribeOptions):
         disable_pyannote_telemetry()
+        silence_torchcodec_warning()
         self.options = options
         self.device = resolve_device(options.device)
         self.model_name = resolve_model(options.model, self.device)

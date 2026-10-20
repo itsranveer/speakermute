@@ -75,6 +75,17 @@ pyannote.audio 4 sends anonymous usage metrics by default. This tool switches th
 
 ### 3. Install
 
+As a tool, straight from GitHub (no clone):
+
+```bash
+uv tool install git+https://github.com/itsranveer/speakermute   # a few GB of torch/whisperx, one time
+speakermute --help
+# or one-off, without installing:
+uvx --from git+https://github.com/itsranveer/speakermute speakermute --help
+```
+
+Or from a clone, which is what the rest of this README assumes (`uv run speakermute ...`):
+
 ```bash
 git clone https://github.com/itsranveer/speakermute.git
 cd speakermute
@@ -232,6 +243,11 @@ and set `FFMPEG=` in `.env` (see Setup §1).
 **Warnings like "Model was trained with pyannote.audio 0.0.1 / torch 1.x" or "Lightning automatically
 upgraded your loaded checkpoint"** are harmless; they come from the bundled VAD checkpoint.
 
+**`torchcodec is not installed correctly so built-in audio decoding will fail`** (pyannote.audio 4, mostly
+on macOS where the torchcodec wheel cannot find ffmpeg's libraries) is also harmless: pyannote only ever
+receives audio that this tool has already decoded with ffmpeg, so torchcodec is never used. The tool
+silences this particular warning; `-v` does not bring it back.
+
 **Wrong speaker muted** – labels are assigned by order of first speech. Run `speakers`, pick the right label,
 or fix `transcript.json` by hand and re-run `mute`.
 
@@ -247,8 +263,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the code layout and pull-request expe
 [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 Layout (`src/speakermute/`): `ranges.py` (padding/merging/filter expression), `srt.py`,
-`speakers.py`, `ffmpeg.py` (subprocess wrapper with progress), `transcribe.py` (WhisperX), `pipeline.py`
-(transcribe/mute steps), `cli.py` (typer).
+`speakers.py`, `paths.py` (output layout), `ffmpeg.py` (subprocess wrapper with progress),
+`transcribe.py` (WhisperX), `pipeline.py` (transcribe/mute steps), `cli.py` (typer), `errors.py`
+(user-facing exceptions), `log.py` (rich console + logger).
 
 ## License
 
