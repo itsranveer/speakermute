@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 from typer.testing import CliRunner
@@ -8,6 +9,20 @@ from speakermute.ffmpeg import FFmpegError
 from speakermute.pipeline import MuteResult
 
 runner = CliRunner()
+
+_ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+_BOXES = re.compile(r"[\u2500-\u257f]")  # rich panel borders
+
+
+def plain(result) -> str:
+    """CLI output as one line of plain text.
+
+    typer renders errors through rich, and on GitHub Actions (``GITHUB_ACTIONS`` set)
+    it forces colour and an 80-column panel, so option names get ANSI codes inside
+    them and messages wrap. Strip both so assertions see the same text everywhere.
+    """
+    text = _BOXES.sub(" ", _ANSI.sub("", result.output))
+    return " ".join(text.split())
 
 
 @pytest.fixture(autouse=True)
@@ -128,12 +143,12 @@ def test_help_lists_commands():
     result = runner.invoke(cli.app, ["--help"])
     assert result.exit_code == 0
     for name in ("transcribe", "mute", "run", "speakers"):
-        assert name in result.output
+        assert name in plain(result)
 
 
 def test_version():
     result = runner.invoke(cli.app, ["--version"])
-    assert result.exit_code == 0 and "speakermute" in result.output
+    assert result.exit_code == 0 and "speakermute" in plain(result)
 
 
 def test_missing_ffmpeg_is_a_clean_error(monkeypatch, video):
@@ -143,8 +158,8 @@ def test_missing_ffmpeg_is_a_clean_error(monkeypatch, video):
     monkeypatch.setattr(cli.ffmpeg, "require_ffmpeg", boom)
     result = runner.invoke(cli.app, ["mute", str(video), "--speaker", "SPEAKER_01"])
     assert result.exit_code == 1
-    assert "could not find ffmpeg" in result.output
-    assert "Traceback" not in result.output
+    assert "could not find ffmpeg" in plain(result)
+    assert "Traceback" not in plain(result)
 
 
 class TestTranscribe:
@@ -194,7 +209,7 @@ class TestTranscribe:
             cli.app, ["transcribe", str(video), "--min-speakers", "3", "--max-speakers", "2"]
         )
         assert result.exit_code == 2
-        assert "--min-speakers" in result.output
+        assert "--min-speakers" in plain(result)
         assert fake_transcribe["videos"] == []
 
     def test_skips_existing_unless_force(self, video, tmp_path, transcript, fake_transcribe):
@@ -202,7 +217,7 @@ class TestTranscribe:
         result = runner.invoke(cli.app, ["transcribe", str(video), "--out-dir", out])
         assert result.exit_code == 0, result.output
         assert fake_transcribe["videos"] == []
-        assert "Skipping" in result.output
+        assert "Skipping" in plain(result)
         assert fake_transcribe["options"] is None  # no Transcriber built => no HF token needed
 
         result = runner.invoke(cli.app, ["transcribe", str(video), "--out-dir", out, "--force"])
@@ -223,14 +238,14 @@ class TestTranscribe:
     def test_bad_rename(self, video, fake_transcribe):
         result = runner.invoke(cli.app, ["transcribe", str(video), "--rename", "nonsense"])
         assert result.exit_code != 0
-        assert "OLD=NEW" in result.output
+        assert "OLD=NEW" in plain(result)
 
     def test_min_greater_than_max(self, video, fake_transcribe):
         result = runner.invoke(
             cli.app, ["transcribe", str(video), "--min-speakers", "3", "--max-speakers", "2"]
         )
         assert result.exit_code != 0
-        assert "--min-speakers" in result.output
+        assert "--min-speakers" in plain(result)
 
     def test_missing_path(self, tmp_path):
         result = runner.invoke(cli.app, ["transcribe", str(tmp_path / "nope.mp4")])
@@ -247,7 +262,7 @@ class TestTranscribe:
             cli.app, ["transcribe", str(video), "--out-dir", str(tmp_path / "out")]
         )
         assert result.exit_code == 1
-        assert "no token" in result.output and "Traceback" not in result.output
+        assert "no token" in plain(result) and "Traceback" not in plain(result)
 
 
 class TestMute:
@@ -281,15 +296,15 @@ class TestMute:
                 "output": None,
             }
         ]
-        assert "episode_muted.mp4" in result.output
-        assert "burned-in" in result.output  # rich may wrap the line
+        assert "episode_muted.mp4" in plain(result)
+        assert "burned-in" in plain(result)  # rich may wrap the line
 
     def test_mute_output_option(self, video, tmp_path, fake_mute):
         custom = tmp_path / "custom.mp4"
         result = runner.invoke(cli.app, ["mute", str(video), "--speaker", "S", "-o", str(custom)])
         assert result.exit_code == 0, result.output
         assert fake_mute[0]["output"] == custom
-        assert "custom.mp4" in result.output.replace("\n", "").replace(" ", "")
+        assert "custom.mp4" in plain(result).replace(" ", "")
 
     def test_mute_with_explicit_transcript(self, video, tmp_path, fake_mute):
         edited = tmp_path / "edited.json"
@@ -307,12 +322,12 @@ class TestMute:
         )
         assert result.exit_code == 0, result.output
         assert fake_mute[0]["speaker"] == ["SPEAKER_01", "SPEAKER_02"]
-        assert "SPEAKER_01, SPEAKER_02" in result.output.replace("\n", "")
+        assert "SPEAKER_01, SPEAKER_02" in plain(result)
 
     def test_mute_requires_speaker(self, video):
         result = runner.invoke(cli.app, ["mute", str(video)])
         assert result.exit_code != 0
-        assert "--speaker" in result.output
+        assert "--speaker" in plain(result)
 
     def test_mute_unknown_speaker_real_pipeline(self, video, tmp_path, transcript):
         result = runner.invoke(
@@ -320,7 +335,7 @@ class TestMute:
             ["mute", str(video), "--speaker", "SPEAKER_09", "--out-dir", str(tmp_path / "out")],
         )
         assert result.exit_code == 1
-        assert "SPEAKER_00, SPEAKER_01" in result.output
+        assert "SPEAKER_00, SPEAKER_01" in plain(result)
 
 
 class TestRun:
@@ -359,7 +374,7 @@ class TestRun:
             cli.app, ["run", str(folder), "--mute-speaker", "S", "-o", str(tmp_path / "x.mp4")]
         )
         assert result.exit_code == 2
-        assert "--output" in result.output and "2 videos" in result.output
+        assert "--output" in plain(result) and "2 videos" in plain(result)
         assert fake_transcribe["videos"] == [] and fake_mute == []
 
     def test_run_skips_transcription_when_present(
@@ -381,7 +396,7 @@ class TestRun:
 
         monkeypatch.setattr(cli.ffmpeg, "require_subtitles_filter", boom)
         result = runner.invoke(cli.app, ["run", str(video), "--mute-speaker", "S", "--burn-subs"])
-        assert result.exit_code == 1 and "no libass" in result.output
+        assert result.exit_code == 1 and "no libass" in plain(result)
         assert fake_transcribe["videos"] == [] and fake_mute == []
 
 
@@ -393,11 +408,11 @@ class TestSpeakers:
             cli.app, ["speakers", str(video), "--out-dir", str(tmp_path / "out")]
         )
         assert result.exit_code == 0, result.output
-        assert "SPEAKER_00" in result.output and "SPEAKER_01" in result.output
-        assert "Welcome." in result.output
-        assert "0:06" in result.output  # SPEAKER_01 talk time 6.5 s
+        assert "SPEAKER_00" in plain(result) and "SPEAKER_01" in plain(result)
+        assert "Welcome." in plain(result)
+        assert "0:06" in plain(result)  # SPEAKER_01 talk time 6.5 s
         assert fake_transcribe["videos"] == []
-        assert "--mute-speaker" in result.output
+        assert "--mute-speaker" in plain(result)
 
     def test_transcribes_when_missing(self, video, tmp_path, fake_transcribe):
         result = runner.invoke(
@@ -405,7 +420,7 @@ class TestSpeakers:
         )
         assert result.exit_code == 0, result.output
         assert fake_transcribe["videos"] == [video]
-        assert "SPEAKER_00" in result.output
+        assert "SPEAKER_00" in plain(result)
 
 
 def test_transcribe_no_diarize(video, tmp_path, fake_transcribe):
