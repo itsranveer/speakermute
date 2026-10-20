@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an option or behaviour.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The recording, the result you want, and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: A command line or an example of the output you have in mind, if you have one.
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current workaround
+      description: For example hand-editing transcript.json, or an ffmpeg command you run afterwards.

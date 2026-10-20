@@ -1,0 +1,54 @@
+name: Bug report
+description: Something fails, or the output is wrong.
+labels: [bug]
+body:
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran (mask nothing but your token).
+      render: shell
+      placeholder: uv run speakermute run videos/episode.mp4 --mute-speaker SPEAKER_01 --burn-subs
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: Error message, wrong speaker muted, duration changed, and so on.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Verbose log
+      description: Re-run with `-v` before the command (e.g. `speakermute -v run ...`) and paste the output. It includes the ffmpeg command lines.
+      render: text
+  - type: input
+    id: os
+    attributes:
+      label: OS and hardware
+      placeholder: macOS 15 / Apple M2 (CPU)  |  Ubuntu 24.04 / RTX 4090 (CUDA 12)
+    validations:
+      required: true
+  - type: input
+    id: ffmpeg
+    attributes:
+      label: ffmpeg version
+      description: First line of `ffmpeg -version` (use the build you point `FFMPEG=` at, if any).
+      placeholder: ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: speakermute and whisperx versions
+      description: "`uv run speakermute --version` and `uv run python -c \"import importlib.metadata as m; print(m.version('whisperx'))\"`"
+      placeholder: speakermute 0.1.0, whisperx 3.8.6
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: Input file
+      description: Container and codecs if relevant (`ffprobe -hide_banner <file>`), length, number of speakers. Do not upload private recordings.
