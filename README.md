@@ -18,16 +18,32 @@ out/<video-stem>/
 └── <stem>_muted.mp4       # chosen speakers silenced (.mkv/.mov keep their container, .webm -> .mkv)
 ```
 
-## What it works on
+## Use cases
 
 Any recording of people talking: podcasts, panel discussions, lectures and Q&A sessions, meetings,
-interviews, recorded calls. Some things people use it for:
+interviews, recorded calls, short clips. The common thread is that you want a recording **minus one
+voice**, with the picture, the timing and everyone else left exactly as they were. Roughly in order
+of how often this comes up:
 
-* **Rehearse your side of a conversation**: mute one participant and speak in the gaps, with the
-  subtitles as the answer key.
-* **Remove a co-host or guest** from an episode while keeping the rest of the conversation intact.
-* **Take the lecturer out of a Q&A** to work through the audience's questions yourself.
-* **Build listening exercises**: silence one side of a dialogue and keep subtitles for the answers.
+1. **Share a recording without the confidential parts.** A recorded meeting, training session or
+   webinar is worth passing on to another team, but one speaker mentioned things that must not leave
+   the room. Instead of asking the presenter to record it again, mute that speaker and share the rest.
+   If only some of what they said is sensitive, keep the other segments by editing `transcript.json`
+   (see [Fixing diarization mistakes](#fixing-diarization-mistakes)) before muting.
+2. **Rehearse a role.** A filmed play, an interview, a language dialogue: mute the part you want to
+   play, let the video run and speak in the gaps. With `--burn-subs` and `--rename`, the subtitles
+   become a prompter that shows your lines and who says them.
+3. **Keep one side of a conversation.** Remove a co-host or guest from an episode, strip the audience
+   questions from a lecture Q&A, or publish your half of a recorded call, all without re-cutting the
+   video.
+4. **Voice-over and dubbing.** Silence the original speaker in a clip (a reel, a tutorial, a video
+   to localise) and lay your own voice and on-screen text over it in a video editor. `subtitles.srt`
+   is your script with timings. Mixing the new audio in is not done by the tool yet; see
+   [Roadmap](#roadmap).
+5. **Listening and comprehension exercises.** Silence one side of a dialogue and hand out the
+   subtitles as the answer key.
+6. **Protect a participant who did not agree to be published.** Mute them and keep everyone else,
+   with no visible edit.
 
 ### Songs and music
 
@@ -257,6 +273,20 @@ upgraded your loaded checkpoint`) and two warnings that are known to be harmless
 
 **Wrong speaker muted** – labels are assigned by order of first speech. Run `speakers`, pick the right label,
 or fix `transcript.json` by hand and re-run `mute`.
+
+## Roadmap
+
+Things that are not built yet. If one of them would help you, or you have another idea, open a
+[feature request](https://github.com/itsranveer/speakermute/issues/new/choose).
+
+* **`--replace-audio FILE`** (next up). Mix an audio file into the muted ranges in the same ffmpeg
+  pass, so a recorded voice-over or a dubbed track takes the silenced speaker's place and no video
+  editor is needed. This completes the voice-over and rehearsal cases in [Use cases](#use-cases):
+  record your lines once, then drop them into the gaps. The pieces are already there: `ranges.py`
+  produces the time ranges, `ffmpeg.py` builds the `volume` filter, and the new flag would add an
+  `adelay` + `amix` step on top of it, sitting next to `--burn-subs` on `mute` and `run`. Open
+  questions are how to place one file across many gaps (one clip per range vs. a single track that is
+  already timed) and whether to duck or fully replace the original.
 
 ## Development
 
