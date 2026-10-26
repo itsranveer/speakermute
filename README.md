@@ -276,17 +276,24 @@ or fix `transcript.json` by hand and re-run `mute`.
 
 ## Roadmap
 
-Things that are not built yet. If one of them would help you, or you have another idea, open a
-[feature request](https://github.com/itsranveer/speakermute/issues/new/choose).
+Planned work lives in the [issue tracker](https://github.com/itsranveer/speakermute/issues?q=is%3Aopen+label%3Aenhancement).
+In priority order:
 
-* **`--replace-audio FILE`** (next up). Mix an audio file into the muted ranges in the same ffmpeg
-  pass, so a recorded voice-over or a dubbed track takes the silenced speaker's place and no video
-  editor is needed. This completes the voice-over and rehearsal cases in [Use cases](#use-cases):
-  record your lines once, then drop them into the gaps. The pieces are already there: `ranges.py`
-  produces the time ranges, `ffmpeg.py` builds the `volume` filter, and the new flag would add an
-  `adelay` + `amix` step on top of it, sitting next to `--burn-subs` on `mute` and `run`. Open
-  questions are how to place one file across many gaps (one clip per range vs. a single track that is
-  already timed) and whether to duck or fully replace the original.
+1. **Split segments at word-level speaker changes** ([#1](https://github.com/itsranveer/speakermute/issues/1)).
+   WhisperX labels a segment with its majority speaker, so a segment spanning a speaker change
+   silences the wrong person. The word-level labels in `transcript.json` already show where to split.
+2. **Review mode for diarization mistakes** ([#2](https://github.com/itsranveer/speakermute/issues/2)).
+   Save the raw diarization turns and flag short, mixed-speaker and nearest-filled segments so you
+   check a few dozen cues instead of watching the whole video.
+3. **Import a corrected `subtitles.srt`** ([#3](https://github.com/itsranveer/speakermute/issues/3)).
+   Fix labels in the SRT, then recover exact timings from the word timestamps and write a new
+   transcript, so hand edits survive the next `mute`.
+4. **`--replace-audio FILE`** ([#4](https://github.com/itsranveer/speakermute/issues/4)). Mix a
+   voice-over or dubbed track into the muted ranges in the same ffmpeg pass, completing the
+   voice-over and rehearsal cases in [Use cases](#use-cases) without a video editor.
+
+Something else would help you? Open a
+[feature request](https://github.com/itsranveer/speakermute/issues/new/choose).
 
 ## Development
 
